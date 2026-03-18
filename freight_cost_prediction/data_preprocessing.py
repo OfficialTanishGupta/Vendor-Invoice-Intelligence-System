@@ -8,7 +8,7 @@ def load_vendor_invoice_data(db_path: str):
     """
     connection = sqlite3.connect(db_path)
     query = "SELECT * FROM vendor_invoice"
-    df = df.read_sql_query(query, connection)
+    df = pd.read_sql_query(query, connection)
     connection.close()
     return df
 

@@ -1,6 +1,7 @@
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import root_mean_squared_error
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 def train_linear_regression(X_train, y_train):
@@ -30,7 +31,7 @@ def evaluate_model(model, X_test, y_test, model_name: str) -> dict:
     preds = model.predict(X_test)
 
     mae = mean_absolute_error(y_test, preds)
-    rmse = mean_squared_error(y_test, preds, squared = False)
+    rmse = root_mean_squared_error(y_test, preds)
     r2 = r2_score(y_test, preds) *100
 
     print(f"\n{model_name} Performance:")
