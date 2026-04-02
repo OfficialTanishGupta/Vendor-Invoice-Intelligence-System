@@ -1,6 +1,7 @@
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import GridSearchCV 
 from sklearn.metrics import root_mean_squared_error
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
@@ -23,6 +24,19 @@ def train_random_forest(X_train, y_train, max_depth=6):
     model.fit(X_train, y_train)
     return model
 
+def train_freight_regressor(X_train, y_train):
+    # Change Classifier to Regressor
+    rf = RandomForestRegressor(random_state=42, n_jobs=1)
+    
+    param_grid = {
+        "n_estimators": [100, 200],
+        "max_depth": [None, 5, 10]
+    }
+
+    # Use default scoring for Regression (R-squared)
+    grid_search = GridSearchCV(rf, param_grid, cv=3, n_jobs=1, verbose=1)
+    grid_search.fit(X_train, y_train)
+    return grid_search
 
 def evaluate_model(model, X_test, y_test, model_name: str) -> dict:
     """
