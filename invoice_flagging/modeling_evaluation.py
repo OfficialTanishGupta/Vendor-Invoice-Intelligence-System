@@ -1,48 +1,53 @@
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import accuracy_score, classification_report, make_scorer, f1_score
-import warnings
+from sklearn.linear_model import LinearRegression
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import GridSearchCV 
+from sklearn.metrics import root_mean_squared_error
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-# Silence the specific Python 3.14 compatibility warnings
-warnings.filterwarnings("ignore", category=UserWarning)
+def train_linear_regression(X_train, y_train):
+    model = LinearRegression()
+    model.fit(X_train, y_train)
+    return model
+
+def train_decision_tree(X_train, y_train, max_depth=5):
+    model = DecisionTreeRegressor(
+        max_depth=max_depth, random_state=42
+    )
+    model.fit(X_train, y_train)
+    return model
 
 def train_random_forest(X_train, y_train):
-    # Set n_jobs to 1 or 2 to avoid the Windows/Python 3.14 parallel processing bug
-    rf = RandomForestClassifier(
-        random_state=42,
-        n_jobs=1 
-    )
-
-    # Simplified grid (from 216 combinations down to 18)
+    rf = RandomForestRegressor(random_state=42, n_jobs=1)
+    
     param_grid = {
         "n_estimators": [100, 200],
-        "max_depth": [None, 5],
-        "min_samples_split": [2, 5],
-        "criterion": ["gini", "entropy"]
+        "max_depth": [None, 5, 10, 15]
     }
 
-    scorer = make_scorer(f1_score)
-
-    grid_search = GridSearchCV(
-        estimator=rf,
-        param_grid=param_grid,
-        scoring=scorer,
-        cv=3,        # Reduced from 5 to 3 for much faster training
-        n_jobs=1,    # Set to 1 to stop the "delayed" warnings
-        verbose=1    # Set to 1 so you can see the progress
-    )
-
-    print("Training models... please wait.")
+    grid_search = GridSearchCV(rf, param_grid, cv=3, n_jobs=1, verbose=1)
     grid_search.fit(X_train, y_train)
     return grid_search
 
-def evaluate_classifier(model, X_test, y_test, model_name):
+# RENAMED TO MATCH YOUR IMPORT
+def evaluate_classifier(model, X_test, y_test, model_name: str) -> dict:
+    """
+    Evaluating regression model and return metrics.
+    """
     preds = model.predict(X_test)
 
-    accuracy = accuracy_score(y_test, preds)
-    # Added zero_division=0 to prevent errors if a class isn't predicted
-    report = classification_report(y_test, preds, zero_division=0)
+    mae = mean_absolute_error(y_test, preds)
+    rmse = root_mean_squared_error(y_test, preds)
+    r2 = r2_score(y_test, preds) * 100
 
-    print(f"\n{model_name} Performance")
-    print(f"Accuracy: {accuracy:.2f}")
-    print(report)
+    print(f"\n{model_name} Performance:")
+    print(f"MAE  :  {mae:.2f}")
+    print(f"RMSE :  {rmse:.2f}")
+    print(f"R²   :  {r2:.2f}%")
+
+    return {
+        "model_name" : model_name,
+        "mae" : mae,
+        "rmse" : rmse,
+        "r2" : r2
+    }
