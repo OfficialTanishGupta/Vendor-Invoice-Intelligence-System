@@ -4,8 +4,7 @@ import numpy as np
 import plotly.express as px
 
 from inference.predict_freight import predict_freight_cost
-fromn inference.predict_invoice_flag import predict-invoice_flag
-
+from inference.predict_invoice_flag import predict_invoice_flag 
 
 # --------------------------------------------------------------
 # Page Configuration
@@ -13,7 +12,7 @@ fromn inference.predict_invoice_flag import predict-invoice_flag
 
 st.set_page_config(
     page_title="Vendor Invoice Intelligence Portal",
-    page_icon="",
+    page_icon="📊",
     layout="wide"
 )
 
@@ -22,15 +21,14 @@ st.set_page_config(
 # --------------------------------------------------------------
 
 st.markdown("""
-# Vendor Invoice Inbtelligence Portal
+# Vendor Invoice Intelligence Portal
 ### AI-Driven Freight Cost Prediction & Invoice Risk Flagging
 
-This internal analytics portal leverages machine learning to
-— **Forecast freight costs accurately**
-— **Detect risky or abnormal vendor invoices**
-— **Reduce financial leakage and manual workload**
+This internal analytics portal leverages machine learning to:
+- **Forecast freight costs accurately**
+- **Detect risky or abnormal vendor invoices**
+- **Reduce financial leakage and manual workload**
 """)
-
 
 st.divider()
 
@@ -39,22 +37,21 @@ st.divider()
 # --------------------------------------------------------------
 
 st.sidebar.title("Model Selection")
-selection_model = st.sidebar.radio(
+selected_model = st.sidebar.radio( 
     "Choose Prediction Module",
     [
-        "Freight Coxt Prediciton",
+        "Freight Cost Prediction",
         "Invoice Manual Approval Flag"
     ]
 )
 
 st.sidebar.markdown("""
-—----------
-** Business Impact**
-— Improved cost forecasting
-— Reduced invoice fraud & anomalies
-— Fater finance operations
+---
+**Business Impact**
+- Improved cost forecasting
+- Reduced invoice fraud & anomalies
+- Faster finance operations
 """)
-
 
 # --------------------------------------------------------------
 # Freight Cost Prediction
@@ -75,39 +72,40 @@ if selected_model == "Freight Cost Prediction":
         with col1:
             quantity = st.number_input(
                 "Quantity",
-                min_value = 1,
-                value = 1200
+                min_value=1,
+                value=1200
             )
         with col2:
             dollars = st.number_input(
                 "Invoice Dollars",
-                min_value = 1.0;
-                value = 18500.0
+                min_value=1.0, 
+                value=18500.0
             )
 
-        submit_freight =st.form_submit_button("Predict Freigth Cost")
-
+        submit_freight = st.form_submit_button("Predict Freight Cost")
 
     if submit_freight:
         input_data = {
-            "Quantity": {quantity},
-            "Dollars": {dollars}
+            "Quantity": [quantity], 
+            "Dollars": [dollars]   
         }
 
-        prediction = predict_freight_cost(input_data){'Predicted_freight'}
+ 
+        prediction = predict_freight_cost(input_data)['Predicted_freight']
 
         st.success("Prediction completed successfully.")
 
-        st.metrics{
-            label = "Estimated Freight Cost",
-            value = f"${prediciton[0]:,.2f}"
-        }
+    
+        st.metric(
+            label="Estimated Freight Cost",
+            value=f"${prediction[0]:,.2f}"
+        )
 
 # --------------------------------------------------------------
-# Invoice Flag Prediciton
+# Invoice Flag Prediction
 # --------------------------------------------------------------
 else:
-    st.subheader("Invoice Manual Approval Prediciton")
+    st.subheader("Invoice Manual Approval Prediction")
 
     st.markdown("""
         Predict whether a vendor invoice should be **flagged for manual approval**
@@ -121,19 +119,50 @@ else:
             invoice_quantity = st.number_input(
                 "Invoice Quantity", 
                 min_value=1,
-                value = 50
+                value=50
             )
             freight = st.number_input(
-                "Freigth Cost",
+                "Freight Cost", 
                 min_value=0.0,
-                value = 1.73
+                value=1.73
             )
 
-            with col2:
-                invoice_dollars = st.number_input(
-                    "Invoice Dollars",
-                )
+        with col2: 
+            invoice_dollars = st.number_input(
+                "Invoice Dollars",
+                min_value=1.0,
+                value=352.95
+            )
+            total_item_quantity = st.number_input(
+                "Total Item Quantity",
+                min_value=1,
+                value=162
+            )
 
+        with col3: 
+            total_item_dollars = st.number_input(
+                "Total Item Dollars", 
+                min_value=1.0,
+                value=2476.0
+            )
 
+        submit_flag = st.form_submit_button("Evaluate Invoice Risk")
 
-    
+            
+    if submit_flag:
+        input_data = {
+            "invoice_quantity": [invoice_quantity],
+            "invoice_dollars": [invoice_dollars],
+            "Freight": [freight],
+            "total_item_quantity": [total_item_quantity],
+            "total_item_dollars": [total_item_dollars]
+        }
+
+        flag_prediction = predict_invoice_flag(input_data)['Predicted_Flag']
+
+        is_flagged = bool(flag_prediction[0])
+
+        if is_flagged:
+            st.error("Invoice requires **MANUAL APPROVAL**")
+        else:
+            st.success("Invoice is **SAFE for Auto-Approval**")
