@@ -1,31 +1,48 @@
 import joblib
 import pandas as pd
+import os
 
-MODEL_PATH = "models/predict_flag_invoice.pkl"
+BASE_DIR    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODEL_PATH  = os.path.join(BASE_DIR, "models", "predict_flag_invoice.pkl")
+SCALER_PATH = os.path.join(BASE_DIR, "models", "scaler.pkl")
 
-def load_model(model_path: str = MODEL_PATH):
-    """Load trained classifier model."""
-    return joblib.load(model_path)
+# Must match EXACTLY what train.py used
+FEATURE_COLS = [
+    "invoice_dollars",
+    "Freight",
+    "total_item_quantity",
+    "total_item_dollars",
+    "days_po_to_invoice",
+    "days_to_pay"
+]
 
 def predict_invoice_flag(input_data):
-    """
-    Predict invoice flag for new vendor invoices.
-    input_data: dict or list of dicts
-    """
-    model = load_model()
-    
-    # Ensures a single dict is treated as one row
-    if isinstance(input_data, dict):
-        input_data = [input_data]
-        
+    model  = joblib.load(MODEL_PATH)
+    scaler = joblib.load(SCALER_PATH)
+
+    # Always build DataFrame directly — no wrapping needed
     input_df = pd.DataFrame(input_data)
-    
-    # Predict and add column
-    # Use .iloc[0] or similar if you only want the value, 
-    # but returning the DF works with your app.py logic
-    input_df['Predicted_Flag'] = model.predict(input_df).round()
+
+    # Fill any missing columns with 0
+    for col in FEATURE_COLS:
+        if col not in input_df.columns:
+            input_df[col] = 0
+
+    X_scaled = scaler.transform(input_df[FEATURE_COLS])
+    input_df['Predicted_Flag'] = (model.predict(X_scaled) >= 0.5).astype(int)
     return input_df
 
-# FIX: Added 'pass' so the block isn't empty
 if __name__ == "__main__":
-    pass 
+    # Test with two very different invoices
+    sample_data = {
+        "invoice_dollars":    [25000, 50],
+        "Freight":            [150.0, 1.5],
+        "total_item_quantity":[500,   2],
+        "total_item_dollars": [24000, 45],
+        "days_po_to_invoice": [30,    1],
+        "days_to_pay":        [60,    5]
+    }
+
+    results = predict_invoice_flag(sample_data)
+    print("\n--- Invoice Flag Predictions ---")
+    print(results[['invoice_dollars', 'Freight', 'Predicted_Flag']])

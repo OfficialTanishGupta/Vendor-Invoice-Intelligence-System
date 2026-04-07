@@ -38,10 +38,26 @@ def load_invoice_data():
     return df
 
 def create_invoice_risk_label(row):
-    if abs(row["invoice_dollars"] - row["total_item_dollars"]) > 5:
+    # Flag if invoice dollars differ from item dollars by more than 20%
+    if row["total_item_dollars"] > 0:
+        dollar_diff_pct = abs(row["invoice_dollars"] - row["total_item_dollars"]) / row["total_item_dollars"]
+        if dollar_diff_pct > 0.20:
+            return 1
+
+    # Flag if receiving delay is unusually high (over 30 days)
+    if row["avg_receiving_delay"] > 30:
         return 1
-    if row["avg_receiving_delay"] > 10:
+
+    # Flag if freight is disproportionately high vs invoice value
+    if row["invoice_dollars"] > 0:
+        freight_pct = row["Freight"] / row["invoice_dollars"]
+        if freight_pct > 0.20:   # freight > 20% of invoice value is suspicious
+            return 1
+
+    # Flag if payment terms are extremely delayed
+    if row["days_to_pay"] > 90:
         return 1
+
     return 0
 
 def apply_labels(df):
