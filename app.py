@@ -2,8 +2,48 @@ import streamlit as st
 import pandas as pd
 import numpy as np
  
-from inference.predict_freight import predict_freight_cost
-from inference.predict_invoice_flag import predict_invoice_flag
+ 
+import joblib
+import os
+
+BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
+FREIGHT_MODEL_PATH  = os.path.join(BASE_DIR, "models", "predict_freight_cost.pkl")
+FREIGHT_SCALER_PATH = os.path.join(BASE_DIR, "models", "freight_scaler.pkl")
+FLAG_MODEL_PATH     = os.path.join(BASE_DIR, "models", "predict_flag_invoice.pkl")
+FLAG_SCALER_PATH    = os.path.join(BASE_DIR, "models", "scaler.pkl")
+
+FREIGHT_FEATURES = [
+    "invoice_dollars", "days_po_to_invoice", "days_to_pay",
+    "total_brands", "total_item_quantity", "total_item_dollars"
+]
+
+FLAG_FEATURES = [
+    "invoice_dollars", "Freight", "total_item_quantity",
+    "total_item_dollars", "days_po_to_invoice", "days_to_pay"
+]
+
+def predict_freight_cost(input_data):
+    model  = joblib.load(FREIGHT_MODEL_PATH)
+    scaler = joblib.load(FREIGHT_SCALER_PATH)
+    df = pd.DataFrame(input_data)
+    for col in FREIGHT_FEATURES:
+        if col not in df.columns:
+            df[col] = 0
+    X_scaled = scaler.transform(df[FREIGHT_FEATURES])
+    df['Predicted_Freight_Amt'] = model.predict(X_scaled).round(2)
+    return df
+
+def predict_invoice_flag(input_data):
+    model  = joblib.load(FLAG_MODEL_PATH)
+    scaler = joblib.load(FLAG_SCALER_PATH)
+    df = pd.DataFrame(input_data)
+    for col in FLAG_FEATURES:
+        if col not in df.columns:
+            df[col] = 0
+    X        = df[FLAG_FEATURES].values
+    X_scaled = scaler.transform(X)
+    df['Predicted_Flag'] = model.predict(X_scaled)
+    return df
  
 # --------------------------------------------------------------
 # Page Configuration
