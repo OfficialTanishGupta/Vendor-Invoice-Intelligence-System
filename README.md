@@ -1,266 +1,203 @@
-# 📊 Vendor Invoice Intelligence System
+# Vendor Invoice Intelligence System
 
-An AI-powered analytics system that predicts freight costs and identifies risky vendor invoices using machine learning.
+> AI-powered system that predicts freight costs and detects high-risk vendor invoices in real time.
 
-This project helps businesses detect invoice anomalies, reduce cost leakage, and improve audit efficiency by combining data engineering, statistical analysis, and ML models.
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit-FF4B4B?style=for-the-badge&logo=streamlit)](https://vendor-invoice-intelligence-systemgit.streamlit.app/)
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python)](https://python.org)
+[![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-ML-F7931E?style=for-the-badge&logo=scikit-learn)](https://scikit-learn.org)
 
-## 🚀 Project Overview
+---
 
-Many organizations deal with thousands of vendor invoices where freight costs may be incorrect or risky. Manual auditing is slow and inefficient.
+## Live Demo
 
-This system automates the process by:
+🔗 **[vendor-invoice-intelligence-systemgit.streamlit.app](https://vendor-invoice-intelligence-systemgit.streamlit.app/)**
 
-Predicting expected freight cost
+---
 
-Flagging high-risk invoices
+## Problem Statement
 
-Providing data insights through visualization
+Organizations process thousands of vendor invoices where freight costs may be inflated and anomalous invoices go undetected. Manual auditing is slow, error-prone, and expensive.
 
-Delivering results via an interactive Streamlit dashboard
+This system automates two core finance operations:
 
-## 🧠 Key Features
+- **Predict** the expected freight cost for any vendor invoice
+- **Flag** high-risk invoices before they reach the finance team
 
-✅ Freight Cost Prediction using Regression Models
-✅ Invoice Risk Detection using Classification Models
-✅ SQL-based Feature Engineering
-✅ Exploratory Data Analysis (EDA)
-✅ Statistical Testing (T-Tests)
-✅ ML Model Evaluation
-✅ Real-time insights through Streamlit App
+---
 
-## 🏗 System Architecture
+## Model Performance
 
-![Project Architecture](Project-images/project-architecture.png)
+| Model                   | Task           | Algorithm     | R² Score   | MAE   |
+| ----------------------- | -------------- | ------------- | ---------- | ----- |
+| Freight Cost Predictor  | Regression     | Random Forest | **96.59%** | 27.64 |
+| Invoice Risk Classifier | Classification | Random Forest | **89.88%** | 0.05  |
 
-The pipeline follows a complete machine learning lifecycle:
+---
 
-1️⃣ Business Problem Definition
-2️⃣ Data Collection from SQL Database
-3️⃣ Feature Engineering using SQL
-4️⃣ Exploratory Data Analysis
-5️⃣ Machine Learning Modeling
-6️⃣ Model Evaluation
-7️⃣ Model Deployment
-8️⃣ Streamlit Dashboard for Business Users
+## System Architecture
 
-## 📂 Project Structure
+```
+SQLite Database
+      │
+      ▼
+Feature Engineering (SQL Aggregations)
+      │
+      ▼
+Data Preprocessing + Scaling (StandardScaler)
+      │
+      ├──▶ Random Forest Regressor  ──▶ Predicted Freight Cost
+      │
+      └──▶ Random Forest Classifier ──▶ Safe / Manual Approval Flag
+      │
+      ▼
+Streamlit Dashboard (Real-time Inference)
+```
 
-```text
+---
+
+## Key Features
+
+- **Freight Cost Prediction** — Regression model predicts freight from invoice features with 96.59% R²
+- **Invoice Risk Detection** — Classifier flags anomalous invoices based on cost ratios and payment patterns
+- **SQL Feature Engineering** — Aggregated features built directly from relational database tables
+- **Scaler Pipeline** — StandardScaler saved and loaded at inference to prevent data leakage
+- **Interactive Dashboard** — Dark-themed Streamlit UI with real-time predictions and risk chips
+
+---
+
+## Project Structure
+
+```
 Vendor-Invoice-Intelligence-System/
+│
+├── app.py                          # Streamlit dashboard (main entry point)
+├── requirements.txt
 │
 ├── data/
 │   └── inventory.db                # SQLite database
 │
-├── notebooks/
-│   └── analysis.ipynb              # EDA + experimentation
-│
-├── src/
-│   ├── data_loader.py              # Load data from SQLite
-│   ├── feature_engineering.py      # SQL aggregations
-│   ├── eda_analysis.py             # Cost & risk analysis
-│   ├── train_regression.py         # Freight cost prediction
-│   ├── train_classification.py     # Risk classification
-│   ├── evaluate_model.py           # Model evaluation
-│   └── utils.py
-│
 ├── models/
-│   ├── freight_cost_model.pkl
-│   └── risk_classifier.pkl
+│   ├── predict_freight_cost.pkl    # Trained regression model
+│   ├── freight_scaler.pkl          # Scaler for freight features
+│   ├── predict_flag_invoice.pkl    # Trained classification model
+│   └── scaler.pkl                  # Scaler for flag features
 │
-├── app/
-│   └── streamlit_app.py            # Streamlit dashboard
+├── invoice_flagging/
+│   ├── train.py                    # Train invoice risk classifier
+│   ├── train_freight.py            # Train freight cost regressor
+│   ├── data_preprocessing.py       # SQL data loading + feature engineering
+│   └── modeling_evaluation.py      # Model training + evaluation functions
 │
-├── requirements.txt
-└── README.md
+└── inference/
+    ├── predict_freight.py          # Freight cost inference
+    └── predict_invoice_flag.py     # Invoice flag inference
 ```
 
-## 📊 Dataset
+---
 
-The project uses a SQLite database containing vendor and inventory information.
+## Feature Engineering
 
-Tables
+Features are built from a SQLite database using SQL aggregations across 4 tables: `vendor_invoice`, `purchases`, `purchase_prices`, `inventory_tables`.
 
-vendor_invoice
+| Feature               | Description                            |
+| --------------------- | -------------------------------------- |
+| `invoice_dollars`     | Total invoice value                    |
+| `Freight`             | Freight cost on the invoice            |
+| `days_po_to_invoice`  | Days between PO creation and invoice   |
+| `days_to_pay`         | Days between invoice and payment       |
+| `total_brands`        | Number of distinct brands on PO        |
+| `total_item_quantity` | Total units on PO                      |
+| `total_item_dollars`  | Total item value on PO                 |
+| `avg_receiving_delay` | Average delay between PO and receiving |
 
-purchases
+---
 
-purchase_prices
+## Invoice Risk Labeling Logic
 
-inventory_tables
+Invoices are flagged as high-risk if any of these conditions are met:
 
-These tables are used to generate invoice-level aggregated features for modeling.
+```python
+# Dollar discrepancy > 20% between invoice and item values
+if abs(invoice_dollars - total_item_dollars) / total_item_dollars > 0.20
 
-## 🔎 Exploratory Data Analysis
+# Freight cost > 20% of invoice value (suspicious markup)
+if freight / invoice_dollars > 0.20
 
-EDA helps understand patterns in:
+# Unusually long payment terms
+if days_to_pay > 90
 
-Freight cost distribution
+# Long receiving delay
+if avg_receiving_delay > 30
+```
 
-Vendor pricing behavior
+---
 
-Invoice risk patterns
+## Installation
 
-Techniques used:
-
-Data visualization
-
-Correlation analysis
-
-Statistical testing (T-Tests)
-
-## 🤖 Machine Learning Models
-
-### 1️⃣ Freight Cost Prediction
-
-Predicts the expected freight cost using regression models.
-
-Possible models:
-
-Linear Regression
-
-Random Forest Regressor
-
-Gradient Boosting
-
-Evaluation metrics:
-
-MAE
-
-RMSE
-
-R² Score
-
-### 2️⃣ Invoice Risk Flagging
-
-Classifies invoices as Safe or Risky.
-
-Possible models:
-
-Logistic Regression
-
-Random Forest
-
-XGBoost
-
-Evaluation metrics:
-
-Precision
-
-Recall
-
-F1 Score
-
-### 📈 Model Evaluation
-
-Model performance is evaluated using:
-
-Regression Metrics
-
-Mean Absolute Error (MAE)
-
-Root Mean Square Error (RMSE)
-
-R² Score
-
-Classification Metrics
-
-Precision
-
-Recall
-
-F1 Score
-
-## 💾 Model Deployment
-
-Trained models are exported as:
-
-.pkl files
-
-These models are then used in the Streamlit application for real-time predictions.
-
-## 🖥 Streamlit Dashboard
-
-The Streamlit app allows business users to:
-
-Upload or input invoice data
-
-Predict freight cost
-
-Detect risky invoices
-
-Visualize cost insights
-
-Run the app with:
-
-streamlit run app/streamlit_app.py
-
-## ⚙️ Installation
-
-### Clone the repository:
-
-git clone https://github.com/yourusername/vendor-invoice-intelligence-system.git
-
-cd vendor-invoice-intelligence-system
-
-### Install dependencies:
-
+```bash
+git clone https://github.com/OfficialTanishGupta/Vendor-Invoice-Intelligence-System.git
+cd Vendor-Invoice-Intelligence-System
 pip install -r requirements.txt
+```
 
-## ▶️ Running the Project
+## Running Locally
 
-Run the notebook for experimentation:
+```bash
+streamlit run app.py
+```
 
-jupyter notebook notebooks/analysis.ipynb
+## Retraining Models
 
-Run Streamlit dashboard:
+```bash
+# Train invoice risk classifier
+cd invoice_flagging
+python train.py
 
-streamlit run app/streamlit_app.py
+# Train freight cost regressor
+python train_freight.py
+```
 
-## 🛠 Tech Stack
+---
 
-Python
+## Tech Stack
 
-Pandas
+| Layer      | Tools                                       |
+| ---------- | ------------------------------------------- |
+| Data       | SQLite, Pandas, SQL                         |
+| ML         | Scikit-Learn, Random Forest, StandardScaler |
+| Backend    | Python, Joblib                              |
+| Frontend   | Streamlit                                   |
+| Deployment | Streamlit Community Cloud                   |
 
-NumPy
+---
 
-Scikit-Learn
+## Business Impact
 
-SQLite
+- Reduces manual invoice review workload
+- Detects freight cost anomalies before payment
+- Flags high-risk invoices with explainable risk signals
+- Provides real-time predictions via web dashboard
 
-Matplotlib / Seaborn
+---
 
-Streamlit
+## Future Improvements
 
-## 🎯 Business Impact
+- Add SHAP explainability to show why an invoice was flagged
+- Implement XGBoost and LightGBM for comparison
+- Add batch CSV upload for bulk invoice scoring
+- Deploy on AWS with Docker containerization
+- Add real-time database integration
 
-This system helps companies:
+---
 
-Reduce invoice fraud risk
+## Author
 
-Detect freight cost anomalies
+**Tanish Gupta** — AI / Machine Learning Engineer
 
-Improve audit efficiency
+Focused on building production-ready ML systems and data-driven applications.
 
-Gain real-time insights
+[![GitHub](https://img.shields.io/badge/GitHub-OfficialTanishGupta-181717?style=flat&logo=github)](https://github.com/OfficialTanishGupta)
 
-## 📌 Future Improvements
+---
 
-Add XGBoost and LightGBM models
-
-Implement SHAP explainability
-
-Deploy on AWS / Docker
-
-Add real-time database integration
-
-## 👨‍💻 Author
-
-Tanish Gupta
-
-AI / Machine Learning Enthusiast
-Focused on building real-world AI systems and data-driven applications.
-
-## ⭐ If you like this project
-
-Give it a ⭐ on GitHub!
+⭐ If you found this useful, give it a star on GitHub!
