@@ -3,10 +3,12 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import joblib
+import os
 
 def load_invoice_data():
-    conn = sqlite3.connect('/Users/Tanish_Gupta/OneDrive/Desktop/ML Projects/Invoice Intelligence System/data/inventory.db')
-
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    DB_PATH  = os.path.join(BASE_DIR, "data", "inventory.db")
+    conn = sqlite3.connect(DB_PATH)
     query = """
     WITH purchase_agg AS (
         SELECT
